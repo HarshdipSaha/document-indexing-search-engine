@@ -23,12 +23,33 @@ No API key, database service, or NLTK corpus download is needed. Dependencies ar
 
 ## Demonstration
 
-1. Click **Start with example documents** to add four short documents. Repeating this button does not duplicate the examples.
+1. Click **Just exploring? Load the example collection** on the project home to add four short documents. Repeating this button does not duplicate the examples.
 2. Search **computer**: the exact index uses the stem `comput`; the N-gram index matches the literal substring `computer`. Both retrieve relevant documents, but frequencies can differ because exact mode also counts `computing`.
 3. Search **compu**: the inverted index finds no exact stem, while the N-gram index retrieves documents containing `computer`, `computers`, or `computing`.
 4. Search **search engine**: both indexes use OR matching across distinct query terms. Every result shows each processed query term's frequency, including zeros, and its total frequency score.
 5. Search **in**: partial mode can find `indexing` and `information`; exact mode removes this stop word. Partial query fragments are deliberately not stop-word filtered.
 6. Add a document or upload multiple UTF-8 `.txt` files, then repeat your query. Both indexes update immediately; any current results are refreshed automatically.
+
+### Project workspace
+
+The interface follows a ChatGPT/Claude-style project layout while remaining a local keyword search application, not an AI chatbot:
+
+- **Left sidebar:** project home, a new-search action, and the most recent 20 distinct queries from this page session. Selecting a query reruns it against the current collection. History is cleared on reload; document storage is unchanged.
+- **Project home:** source file cards and suggested exact, partial, and multi-term queries.
+- **Search composer:** press Enter to search, Shift + Enter for a new line, or Cmd/Ctrl + K to start a new search. Search drafts survive background result refreshes.
+- **Search conversation:** the selected query, index comparison table, term frequencies, and clickable document results.
+- **Project knowledge panel:** all sources, live index statistics, and a full-text document viewer. Click a file card or result title to read it.
+- **Add content:** a keyboard-accessible dialog for pasted text or multiple file uploads.
+
+Both side panels can be toggled. On smaller screens they become overlays with keyboard focus containment and Escape-to-close support. This is one shared document project; separate projects, generated AI answers, and persistent chat history are not implemented.
+
+Optional real-browser regression test, using an installed `agent-browser` CLI:
+
+```sh
+python tests/browser_smoke.py
+```
+
+The browser test starts a temporary server and document store, exercises uploads/search/history/document viewing and mobile behavior, and shuts down afterward. It does not modify your collection.
 
 ### Comparing query types
 

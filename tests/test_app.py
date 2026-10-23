@@ -77,6 +77,15 @@ class AppTests(unittest.TestCase):
         parser.feed(self.client.get('/').get_data(as_text=True))
         self.assertEqual(parser.stack, [])
 
+    def test_project_workspace_has_accessible_navigation_and_document_viewer(self):
+        html = self.client.get('/').get_data(as_text=True)
+        for component in ('id="sidebar"', 'id="search-history"', 'id="project-home"',
+                          'id="conversation"', 'id="knowledge-panel"',
+                          'id="document-content"', 'id="add-dialog"',
+                          'aria-label="Search project documents"',
+                          'aria-label="Project navigation"'):
+            self.assertIn(component, html)
+
     def test_size_limit_returns_json(self):
         self.app.config['MAX_CONTENT_LENGTH'] = 100
         response = self.client.post('/api/documents', json={'title': 'Big', 'text': 'a' * 200})

@@ -3,28 +3,146 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Index Lab · Document search</title>
+  <meta name="description" content="A local project workspace for document search. Compare inverted and n-gram indexes, explore sources, and inspect search timings.">
+  <title>Document search · Index Lab</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
   <script src="{{ url_for('static', filename='app.js') }}" defer></script>
 </head>
 <body>
-  <header class="topbar"><a class="brand" href="/">Index<span>Lab</span></a><span>INFORMATION RETRIEVAL / ASSIGNMENT 1</span></header>
-  <main>
-   <section class="intro"><p class="eyebrow">DOCUMENT INDEXING & SEARCH</p><h1>One collection.<br>Two ways to find it.</h1><p>Explore exact terms and word fragments. See what each index finds—and how long it takes.</p></section>
-    <div class="workspace">
-      <aside>
-        <section class="panel collection"><div class="section-heading"><h2>Your collection</h2><span id="document-count" class="badge">0 documents</span></div><div id="documents" class="document-list"><p class="muted">Add text or upload documents to begin.</p></div><button id="load-samples" class="secondary full">Add example documents</button></section>
-        <section class="panel"><h2>Add a document</h2><form id="add-form"><label for="title">Title</label><input id="title" name="title" required maxlength="200" placeholder="e.g. Introduction to retrieval"><label for="text">Document text</label><textarea id="text" name="text" required rows="5" placeholder="Paste your document here…"></textarea><button type="submit" class="full">Add & index</button></form><div class="divider">or upload text files</div><form id="upload-form"><label for="files">UTF-8 .txt files · up to 30 files / 5 MB total</label><input id="files" type="file" name="files" accept=".txt,text/plain" multiple required><button type="submit" class="secondary full">Upload & index</button></form></section>
-      </aside>
-      <div class="search-space">
-        <section class="panel search-panel"><p class="eyebrow">SEARCH THE COLLECTION</p><form id="search-form"><label class="sr-only" for="query">Keywords or partial words</label><div class="search-input"><input id="query" maxlength="500" placeholder="Try “computer”, “compu”, or “search engine”" required><button type="submit">Compare indexes <span aria-hidden="true">↗</span></button></div></form><p class="hint">Case-insensitive · stop words removed · any query term can match</p><div class="examples"><span>Try a query</span><button type="button" data-query="computer">Exact: computer</button><button type="button" data-query="compu">Partial: compu</button><button type="button" data-query="search engine">Multiple: search engine</button></div></section>
-        <p id="status" role="status" aria-live="polite">Ready. Add documents to build your indexes.</p>
-        <section class="panel comparison"><div class="section-heading"><h2>Index comparison</h2><span id="timing-label" class="muted">No query yet</span></div><div class="table-scroll"><table><caption class="sr-only">Search results and timings for both indexing techniques</caption><thead><tr><th scope="col">Technique</th><th scope="col">Query processing</th><th scope="col">Matches</th><th scope="col">Median time</th></tr></thead><tbody><tr><th scope="row"><span class="dot exact"></span>Inverted index</th><td>Stemmed exact term</td><td id="exact-count">—</td><td id="exact-time">—</td></tr><tr><th scope="row"><span class="dot partial"></span>N-gram index</th><td>Word substring</td><td id="partial-count">—</td><td id="partial-time">—</td></tr></tbody></table></div><p class="hint">Time includes query preprocessing, index lookup, frequency counting and ranking; excludes network and rendering. Small differences may be measurement noise.</p></section>
-        <div class="result-columns"><section class="panel"><div class="result-heading"><span class="dot exact"></span><h2>Exact matches</h2></div><p class="hint">Inverted index · Porter stemming</p><div id="exact-results"><p class="empty">Search to see matching documents.</p></div></section><section class="panel"><div class="result-heading"><span class="dot partial"></span><h2>Partial matches</h2></div><p class="hint">Character trigrams · verified substrings</p><div id="partial-results"><p class="empty">Search to see matching documents.</p></div></section></div>
-        <section class="method-note"><h2>Inside the indexes</h2><p><strong>Exact:</strong> tokenize → remove stop words → stem → retrieve document frequencies. “Running” and “runs” both become “run.”</p><p><strong>Partial:</strong> tokenize → remove stop words → intersect character-gram postings → verify the full fragment. “Compu” finds “computer” and “computing.” One- and two-character fragments use smaller grams. Query fragments are not removed as stop words. Stemming is deliberately skipped to preserve substrings.</p><p>Results are ranked by total query-term frequency, with OR matching. Repeated query terms count once. Titles are labels; only document bodies are indexed.</p></section>
+  <a class="skip-link" href="#query">Skip to search</a>
+  <div class="app-shell" id="app-shell">
+    <nav class="sidebar" id="sidebar" aria-label="Project navigation">
+      <div class="sidebar-brand">
+        <a href="/" class="brand">Index Lab<span class="brand-dot">✳</span></a>
+        <button class="icon-button mobile-close" id="close-sidebar" aria-label="Close navigation">×</button>
       </div>
-    </div>
-  </main>
-  <footer>Index Lab <span>Local collection. Transparent retrieval.</span></footer>
+      <button class="new-search" id="new-search"><span aria-hidden="true">＋</span> New search <span class="key-hint">⌘ K</span></button>
+      <div class="nav-label">Projects</div>
+      <button class="project-link" id="project-link" aria-current="page"><span class="folder-icon" aria-hidden="true"></span><span>Document search</span></button>
+      <div class="nav-label history-label">Recent searches <span>THIS SESSION</span></div>
+      <div id="search-history" class="search-history"><p class="sidebar-empty">Your searches will appear here.</p></div>
+      <div class="sidebar-bottom">
+        <div class="local-note"><span class="status-dot"></span> Local workspace <span class="local-tag">PRIVATE</span></div>
+        <div class="profile"><span class="avatar">UD</span><div><strong>IRS assignment</strong><span>Document indexing & retrieval</span></div></div>
+      </div>
+    </nav>
+
+    <main class="workspace" id="main-content">
+      <header class="workspace-header">
+        <div class="breadcrumbs">
+          <button class="icon-button" id="toggle-sidebar" aria-label="Toggle navigation" aria-controls="sidebar" aria-expanded="true">☰</button>
+          <span class="breadcrumb-root">Projects</span><span class="breadcrumb-slash">/</span><span>Document search</span>
+        </div>
+        <button id="toggle-knowledge" class="quiet-button" aria-controls="knowledge-panel" aria-expanded="true"><span class="panel-icon" aria-hidden="true"></span> Project files <span id="header-file-count" class="count-badge">0</span></button>
+      </header>
+
+      <div class="workspace-scroll" id="workspace-scroll">
+        <section class="project-home content-width" id="project-home">
+          <div class="project-icon"><span class="folder-icon" aria-hidden="true"></span></div>
+          <p class="eyebrow">YOUR RESEARCH WORKSPACE</p>
+          <h1>Document search</h1>
+          <p class="project-description">A home for your documents.<br>Find the right words. Explore what connects them.</p>
+          <div class="project-meta"><span class="status-dot"></span><span id="project-stats">0 documents indexed</span><span class="meta-divider">·</span><span>Two search techniques</span></div>
+          <div class="section-heading"><h2>Project knowledge</h2><button class="text-button" data-open-add>＋ Add content</button></div>
+          <div class="file-grid" id="home-files"></div>
+          <div class="getting-started" id="getting-started">
+            <div class="file-symbol" aria-hidden="true">T</div>
+            <h3>Good searches start with your sources.</h3>
+            <p>Add your notes or upload text files. Both indexes update automatically.</p>
+            <button class="secondary-button" data-open-add>Add your first document <span aria-hidden="true">＋</span></button>
+          </div>
+          <div class="suggestions-heading">A few ways to explore</div>
+          <div class="suggestions">
+            <button data-query="computer"><span class="suggestion-icon" aria-hidden="true">⌕</span><strong>Find an exact keyword</strong><span>Search for “computer”</span><span class="suggestion-arrow" aria-hidden="true">↗</span></button>
+            <button data-query="compu"><span class="suggestion-icon" aria-hidden="true">≋</span><strong>Start with part of a word</strong><span>Try the fragment “compu”</span><span class="suggestion-arrow" aria-hidden="true">↗</span></button>
+            <button data-query="search engine"><span class="suggestion-icon" aria-hidden="true">⇄</span><strong>Connect multiple terms</strong><span>Compare “search engine”</span><span class="suggestion-arrow" aria-hidden="true">↗</span></button>
+          </div>
+          <button class="sample-link" id="load-samples">Just exploring? Load the example collection <span aria-hidden="true">→</span></button>
+        </section>
+
+        <section class="conversation content-width" id="conversation" aria-label="Search conversation" hidden>
+          <div class="user-turn"><span class="user-label">You</span><p id="query-message"></p></div>
+          <article class="search-response" aria-labelledby="response-heading">
+            <div class="response-heading"><span class="response-mark" aria-hidden="true">✳</span><h2 id="response-heading">Search results</h2><span class="retrieval-label">DOCUMENT RETRIEVAL</span></div>
+            <p id="result-summary" class="result-summary"></p>
+            <div class="comparison-card">
+              <div class="section-heading"><h3>Two indexes, side by side</h3><span id="timing-label"></span></div>
+              <div class="table-scroll">
+                <table>
+                  <caption class="sr-only">Document matches and median search time by indexing technique</caption>
+                  <thead><tr><th scope="col">Index</th><th scope="col">Matches</th><th scope="col">Search time</th></tr></thead>
+                  <tbody>
+                   <tr><th scope="row">Inverted <span class="table-note">Exact stems</span></th><td id="exact-count">—</td><td id="exact-time">—</td></tr>
+                    <tr><th scope="row">N-gram <span class="table-note">Partial words</span></th><td id="partial-count">—</td><td id="partial-time">—</td></tr>
+                  </tbody>
+                </table>
+              </div>
+              <p class="timing-note">Median of 50 warm runs. Includes preprocessing, lookup and ranking; excludes network and rendering. Small differences may be noise.</p>
+            </div>
+            <div class="result-columns">
+              <section class="result-section"><h3>Exact matches <span class="subtle-label">Inverted index</span></h3><div id="exact-results"></div></section>
+              <section class="result-section"><h3>Partial matches <span class="subtle-label">N-gram index</span></h3><div id="partial-results"></div></section>
+            </div>
+            <p class="result-footnote">Ranked by total query-term frequency. Any term can match. Open a source to read the full document.</p>
+          </article>
+        </section>
+      </div>
+
+      <div class="composer-area">
+        <div class="content-width">
+          <p id="status" class="status-message" role="status" aria-live="polite">Your files stay on this computer.</p>
+          <form id="search-form" class="composer" aria-label="Search project documents">
+            <label class="sr-only" for="query">Keywords or partial words</label>
+            <textarea id="query" rows="2" maxlength="500" placeholder="Search your project files…" required></textarea>
+            <div class="composer-toolbar">
+              <div class="composer-options"><button type="button" class="attach-button" data-open-add aria-label="Add project content">＋</button><span class="search-mode"><span class="status-dot"></span> Compare both indexes</span></div>
+              <button type="submit" id="search-submit" class="send-button" aria-label="Search documents"><span aria-hidden="true">↑</span></button>
+            </div>
+          </form>
+          <p class="composer-footnote">Keyword search, not an AI chat. <span>Enter to search · Shift + Enter for a new line</span></p>
+        </div>
+      </div>
+    </main>
+
+    <aside class="knowledge-panel" id="knowledge-panel" aria-label="Project knowledge">
+      <header class="knowledge-header"><h2>Project knowledge</h2><button class="icon-button" id="close-knowledge" aria-label="Close project files">×</button></header>
+      <div class="knowledge-scroll">
+        <div id="knowledge-overview">
+          <div class="knowledge-intro"><p>Give your searches some context.</p><span>Everything in this project is indexed and ready to search.</span></div>
+          <button class="add-content-button" data-open-add><span aria-hidden="true">＋</span> Add content</button>
+          <div class="section-heading files-heading"><h3>Files</h3><span id="document-count">0</span></div>
+          <div id="documents" class="document-list"></div>
+          <section class="index-health"><h3><span class="status-dot"></span> Index health</h3><dl><div><dt>Unique stems</dt><dd id="stem-count">0</dd></div><div><dt>Source words</dt><dd id="word-count">0</dd></div><div><dt>Character grams</dt><dd id="gram-count">0</dd></div></dl><p>Updated whenever you add a source.</p></section>
+          <details class="how-it-works"><summary>How search works</summary><p><strong>Exact search</strong> removes stop words and applies Porter stemming. “Running” and “runs” both become “run.”</p><p><strong>Partial search</strong> intersects character-gram postings and verifies substrings. “Compu” finds “computer.” Short fragments use smaller grams.</p><p>Document stop words are excluded. Partial query fragments are not stemmed or stop-word filtered. Only document bodies are indexed.</p></details>
+        </div>
+        <article id="document-viewer" hidden>
+          <button id="back-to-files" class="text-button">← All project files</button>
+          <div class="viewer-file-type"><span class="file-symbol" aria-hidden="true">T</span> TEXT DOCUMENT</div>
+          <h2 id="document-title"></h2>
+          <p id="document-meta" class="muted"></p>
+          <pre id="document-content"></pre>
+        </article>
+      </div>
+      <div class="knowledge-footer"><span class="status-dot"></span> Stored locally · No external AI services</div>
+    </aside>
+  </div>
+  <button id="panel-backdrop" class="panel-backdrop" aria-label="Close open panels" hidden></button>
+
+  <dialog id="add-dialog" aria-labelledby="add-dialog-title">
+    <div class="dialog-heading"><div><p class="eyebrow">PROJECT KNOWLEDGE</p><h2 id="add-dialog-title">Add to your project</h2></div><button class="icon-button" id="close-add-dialog" aria-label="Close add content">×</button></div>
+    <p class="dialog-description">Add a document or upload text files. Both search indexes update right away.</p>
+    <form id="add-form">
+      <label for="title">Document title</label><input id="title" name="title" required maxlength="200" placeholder="e.g. Notes on information retrieval">
+      <label for="text">Document text</label><textarea id="text" name="text" required rows="5" placeholder="Paste your notes, article, or document…"></textarea>
+      <button type="submit" class="primary-button" data-mutation>Add document</button>
+    </form>
+    <div class="dialog-divider"><span>or upload files</span></div>
+    <form id="upload-form">
+      <label for="files">Text files</label><input id="files" type="file" name="files" accept=".txt,text/plain" multiple required>
+      <p class="field-hint">UTF-8 .txt files · up to 30 files · 5 MB total</p>
+      <button type="submit" class="secondary-button" data-mutation>Upload & index</button>
+    </form>
+    <p id="dialog-status" class="dialog-status" role="status" aria-live="polite"></p>
+  </dialog>
 </body>
 </html>
