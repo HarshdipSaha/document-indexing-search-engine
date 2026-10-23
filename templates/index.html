@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Index Lab · Document search</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <script src="{{ url_for('static', filename='app.js') }}" defer></script>
+</head>
+<body>
+  <header class="topbar"><a class="brand" href="/">Index<span>Lab</span></a><span>INFORMATION RETRIEVAL / ASSIGNMENT 1</span></header>
+  <main>
+   <section class="intro"><p class="eyebrow">DOCUMENT INDEXING & SEARCH</p><h1>One collection.<br>Two ways to find it.</h1><p>Explore exact terms and word fragments. See what each index finds—and how long it takes.</p></section>
+    <div class="workspace">
+      <aside>
+        <section class="panel collection"><div class="section-heading"><h2>Your collection</h2><span id="document-count" class="badge">0 documents</span></div><div id="documents" class="document-list"><p class="muted">Add text or upload documents to begin.</p></div><button id="load-samples" class="secondary full">Add example documents</button></section>
+        <section class="panel"><h2>Add a document</h2><form id="add-form"><label for="title">Title</label><input id="title" name="title" required maxlength="200" placeholder="e.g. Introduction to retrieval"><label for="text">Document text</label><textarea id="text" name="text" required rows="5" placeholder="Paste your document here…"></textarea><button type="submit" class="full">Add & index</button></form><div class="divider">or upload text files</div><form id="upload-form"><label for="files">UTF-8 .txt files · up to 30 files / 5 MB total</label><input id="files" type="file" name="files" accept=".txt,text/plain" multiple required><button type="submit" class="secondary full">Upload & index</button></form></section>
+      </aside>
+      <div class="search-space">
+        <section class="panel search-panel"><p class="eyebrow">SEARCH THE COLLECTION</p><form id="search-form"><label class="sr-only" for="query">Keywords or partial words</label><div class="search-input"><input id="query" maxlength="500" placeholder="Try “computer”, “compu”, or “search engine”" required><button type="submit">Compare indexes <span aria-hidden="true">↗</span></button></div></form><p class="hint">Case-insensitive · stop words removed · any query term can match</p><div class="examples"><span>Try a query</span><button type="button" data-query="computer">Exact: computer</button><button type="button" data-query="compu">Partial: compu</button><button type="button" data-query="search engine">Multiple: search engine</button></div></section>
+        <p id="status" role="status" aria-live="polite">Ready. Add documents to build your indexes.</p>
+        <section class="panel comparison"><div class="section-heading"><h2>Index comparison</h2><span id="timing-label" class="muted">No query yet</span></div><div class="table-scroll"><table><caption class="sr-only">Search results and timings for both indexing techniques</caption><thead><tr><th scope="col">Technique</th><th scope="col">Query processing</th><th scope="col">Matches</th><th scope="col">Median time</th></tr></thead><tbody><tr><th scope="row"><span class="dot exact"></span>Inverted index</th><td>Stemmed exact term</td><td id="exact-count">—</td><td id="exact-time">—</td></tr><tr><th scope="row"><span class="dot partial"></span>N-gram index</th><td>Word substring</td><td id="partial-count">—</td><td id="partial-time">—</td></tr></tbody></table></div><p class="hint">Time includes query preprocessing, index lookup, frequency counting and ranking; excludes network and rendering. Small differences may be measurement noise.</p></section>
+        <div class="result-columns"><section class="panel"><div class="result-heading"><span class="dot exact"></span><h2>Exact matches</h2></div><p class="hint">Inverted index · Porter stemming</p><div id="exact-results"><p class="empty">Search to see matching documents.</p></div></section><section class="panel"><div class="result-heading"><span class="dot partial"></span><h2>Partial matches</h2></div><p class="hint">Character trigrams · verified substrings</p><div id="partial-results"><p class="empty">Search to see matching documents.</p></div></section></div>
+        <section class="method-note"><h2>Inside the indexes</h2><p><strong>Exact:</strong> tokenize → remove stop words → stem → retrieve document frequencies. “Running” and “runs” both become “run.”</p><p><strong>Partial:</strong> tokenize → remove stop words → intersect character-gram postings → verify the full fragment. “Compu” finds “computer” and “computing.” One- and two-character fragments use smaller grams. Query fragments are not removed as stop words. Stemming is deliberately skipped to preserve substrings.</p><p>Results are ranked by total query-term frequency, with OR matching. Repeated query terms count once. Titles are labels; only document bodies are indexed.</p></section>
+      </div>
+    </div>
+  </main>
+  <footer>Index Lab <span>Local collection. Transparent retrieval.</span></footer>
+</body>
+</html>
