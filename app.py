@@ -77,7 +77,10 @@ def create_app(storage_path=None):
         query = request.args.get('q', '')
         if len(query) > 500:
             raise ValueError('Use a query of at most 500 characters.')
-        return jsonify(engine.compare(query))
+        with engine.lock:
+            report = engine.compare(query)
+            report['collection_ids'] = sorted(engine.documents)
+        return jsonify(report)
 
     return app
 

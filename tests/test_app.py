@@ -77,14 +77,24 @@ class AppTests(unittest.TestCase):
         parser.feed(self.client.get('/').get_data(as_text=True))
         self.assertEqual(parser.stack, [])
 
-    def test_project_workspace_has_accessible_navigation_and_document_viewer(self):
+    def test_workbench_has_search_library_comparison_and_accessible_viewers(self):
         html = self.client.get('/').get_data(as_text=True)
-        for component in ('id="sidebar"', 'id="search-history"', 'id="project-home"',
-                          'id="conversation"', 'id="knowledge-panel"',
+        for component in ('id="search-view"', 'id="library-view"', 'id="compare-view"',
+                          'id="library-filter"', 'id="benchmark-body"',
                           'id="document-content"', 'id="add-dialog"',
-                          'aria-label="Search project documents"',
-                          'aria-label="Project navigation"'):
+                          'id="reader-dialog"', 'aria-label="Workbench navigation"',
+                          'aria-label="Search documents"'):
             self.assertIn(component, html)
+        self.assertNotIn('id="sidebar"', html)
+        self.assertNotIn('id="conversation"', html)
+
+    def test_search_includes_collection_ids_for_cross_tab_consistency(self):
+        first = self.client.post('/api/documents', json={'title': 'One', 'text': 'Computers'}).get_json()['document']
+        self.assertEqual(self.client.get('/api/search?q=computers').get_json()['collection_ids'], [first['id']])
+        second = self.client.post('/api/documents', json={'title': 'Two', 'text': 'Computers'}).get_json()['document']
+        report = self.client.get('/api/search?q=computers').get_json()
+        self.assertEqual(report['collection_ids'], sorted([first['id'], second['id']]))
+        self.assertEqual(len(report['inverted']['results']), 2)
 
     def test_size_limit_returns_json(self):
         self.app.config['MAX_CONTENT_LENGTH'] = 100

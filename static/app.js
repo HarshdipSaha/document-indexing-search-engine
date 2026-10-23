@@ -1,11 +1,15 @@
 const $ = (selector) => document.querySelector(selector);
-const shell = $('#app-shell');
 let documents = [];
-let history = [];
+let activeReport = null;
+let reports = [];
+let recentQueries = [];
 let currentQuery = '';
-let selectedDocumentId = null;
-let activeHistoryId = null;
+let coverageQuery = '';
+let mode = 'inverted';
 let searchVersion = 0;
+let collectionVersion = 0;
+let collectionSignature = null;
+let collectionRequest = 0;
 let mutating = false;
 const samples = [
   { title: '01 · Computer science', text: 'Computer science studies computers and computation. Computer systems use algorithms to process information. Computing connects mathematics and engineering.' },
@@ -13,6 +17,13 @@ const samples = [
   { title: '03 · Text processing', text: 'Text processing includes tokenization, stop word removal and stemming. Running, runs and runner are related words. Processing documents improves information retrieval.' },
   { title: '04 · Partial word retrieval', text: 'Character n-grams support partial word search. Computer and computing share character sequences. A search index maps each sequence to candidate words.' }
 ];
+
+function element(tag, text, className) {
+  const node = document.createElement(tag);
+  node.textContent = text;
+  if (className) node.className = className;
+  return node;
+}
 
 function status(message, error = false) {
   for (const selector of ['#status', '#dialog-status']) {
@@ -24,362 +35,316 @@ function status(message, error = false) {
 async function api(url, options) {
   const response = await fetch(url, options);
   const data = await response.json();
-  if (!response.ok) throw new Error(data.error || 'The request failed. Please try again.');
+  if (!response.ok) throw new Error(data.error || 'Request failed. Please try again.');
   return data;
 }
 
-function element(tag, text, className) {
-  const node = document.createElement(tag);
-  node.textContent = text;
-  if (className) node.className = className;
-  return node;
-}
-
-function isPanelOpen(panel) {
-  const breakpoint = panel === 'sidebar' ? 760 : 1100;
-  return window.innerWidth <= breakpoint
-    ? shell.classList.contains(`${panel}-open`)
-    : !shell.classList.contains(`${panel}-collapsed`);
-}
-
-function overlayPanel() {
-  if (window.innerWidth <= 760 && isPanelOpen('sidebar')) return 'sidebar';
-  if (window.innerWidth <= 1100 && isPanelOpen('knowledge')) return 'knowledge';
-  return null;
-}
-
-function updatePanels() {
-  const overlay = overlayPanel();
-  for (const panel of ['sidebar', 'knowledge']) {
-    $(`#toggle-${panel}`).setAttribute('aria-expanded', String(isPanelOpen(panel)));
-    const target = panel === 'sidebar' ? $('#sidebar') : $('#knowledge-panel');
-    target.inert = !isPanelOpen(panel) || Boolean(overlay && overlay !== panel);
-  }
-  $('.workspace').inert = Boolean(overlay);
-  $('#panel-backdrop').hidden = !overlay;
-}
-
-function setPanel(panel, open) {
-  const breakpoint = panel === 'sidebar' ? 760 : 1100;
-  if (window.innerWidth <= breakpoint) {
-    shell.classList.toggle(`${panel}-open`, open);
-    if (open) shell.classList.remove(`${panel === 'sidebar' ? 'knowledge' : 'sidebar'}-open`);
-  } else {
-    shell.classList.toggle(`${panel}-collapsed`, !open);
-  }
-  updatePanels();
-  const target = panel === 'sidebar' ? $('#sidebar') : $('#knowledge-panel');
-  if (open && window.innerWidth <= breakpoint) {
-    target.querySelector('button, a[href]').focus({ preventScroll: true });
-  } else if (!open && target.contains(document.activeElement)) {
-    $(`#toggle-${panel}`).focus({ preventScroll: true });
+function route() {
+  const requested = location.hash.slice(1);
+  const view = ['search', 'library', 'compare'].includes(requested) ? requested : 'search';
+  for (const name of ['search', 'library', 'compare']) {
+    $(`#${name}-view`).hidden = name !== view;
+    const link = $(`[data-route="${name}"]`);
+    if (name === view) link.setAttribute('aria-current', 'page');
+    else link.removeAttribute('aria-current');
   }
 }
 
-function closePanels() {
-  shell.classList.remove('sidebar-open', 'knowledge-open');
-  updatePanels();
+function goToSearch() {
+  if (location.hash !== '#search') location.hash = 'search';
+  route();
+  $('#query').focus({ preventScroll: true });
 }
 
-function showFiles() {
-  selectedDocumentId = null;
-  $('#knowledge-overview').hidden = false;
-  $('#document-viewer').hidden = true;
-  for (const button of document.querySelectorAll('.document-item')) {
-    button.classList.remove('selected');
-  }
+function setSearchBusy(busy) {
+  $('#search-submit').disabled = busy;
+  $('#search-form').setAttribute('aria-busy', String(busy));
+  for (const button of document.querySelectorAll('[data-mode]')) button.disabled = busy;
 }
 
 function openDocument(id) {
   const doc = documents.find((item) => item.id === id);
   if (!doc) return;
-  selectedDocumentId = id;
   $('#document-title').textContent = doc.title;
+  $('#document-meta').textContent = `${doc.text.length.toLocaleString()} characters · Text document · Indexed locally`;
   $('#document-content').textContent = doc.text;
-  $('#document-meta').textContent = `${doc.text.length.toLocaleString()} characters · Indexed and searchable`;
-  $('#knowledge-overview').hidden = true;
-  $('#document-viewer').hidden = false;
-  setPanel('knowledge', true);
-  $('#knowledge-panel .knowledge-scroll').scrollTop = 0;
-  $('#back-to-files').focus({ preventScroll: true });
+  $('#reader-dialog').showModal();
+  $('#reader-dialog').scrollTop = 0;
 }
 
-function fileButton(doc, className) {
-  const button = element('button', '', className);
-  button.type = 'button';
-  button.setAttribute('aria-label', `Open ${doc.title}`);
-  const copy = element('span', '', 'file-copy');
-  copy.append(element('strong', doc.title),
-    element('span', `${doc.text.length.toLocaleString()} characters · Text`));
-  button.append(element('span', 'T', 'file-symbol'), copy);
-  button.addEventListener('click', () => openDocument(doc.id));
-  return button;
+function renderLibrary() {
+  const query = $('#library-filter').value.trim().toLowerCase();
+  const filtered = documents.filter((doc) => doc.title.toLowerCase().includes(query));
+  $('#library-count').textContent = `${filtered.length} of ${documents.length} documents`;
+  $('#library-empty').hidden = documents.length > 0;
+  const grid = $('#library-grid');
+  grid.replaceChildren();
+  if (documents.length && !filtered.length) {
+    grid.append(element('p', 'No titles match this filter. Clear it to see all documents.', 'empty-results'));
+  }
+  for (const doc of filtered) {
+    const card = element('button', '', 'library-card');
+    card.setAttribute('aria-label', `Open ${doc.title}`);
+    card.append(element('span', 'TXT / SOURCE', 'file-label'), element('h3', doc.title),
+      element('p', doc.text.slice(0, 180), 'library-preview'),
+      element('span', `${doc.text.length.toLocaleString()} characters ↗`, 'file-meta'));
+    card.addEventListener('click', () => openDocument(doc.id));
+    grid.append(card);
+  }
 }
 
-async function refreshCollection() {
-  const data = await api('/api/documents');
-  documents = data.documents;
-  const count = documents.length;
-  $('#document-count').textContent = count;
-  $('#header-file-count').textContent = count;
-  $('#project-stats').textContent = `${count} ${count === 1 ? 'document' : 'documents'} indexed`;
-  for (const [id, key] of [['stem-count', 'stems'], ['word-count', 'words'], ['gram-count', 'grams']]) {
-    $(`#${id}`).textContent = data.stats[key].toLocaleString();
-  }
-  $('#documents').replaceChildren();
-  $('#home-files').replaceChildren();
-  $('#getting-started').hidden = count > 0;
-  $('#home-files').hidden = count === 0;
-  if (!count) {
-    $('#documents').append(element('p', 'No files yet. Add a source to start building your project.', 'empty-files'));
-  }
-  for (const doc of documents) {
-    $('#documents').append(fileButton(doc, 'document-item'));
-  }
-  for (const doc of documents.slice(0, 3)) {
-    $('#home-files').append(fileButton(doc, 'file-card'));
-  }
-  if (count > 3) {
-    const more = element('button', `View all ${count} files →`, 'view-all-files');
-    more.addEventListener('click', () => {
-      showFiles();
-      setPanel('knowledge', true);
-      $('#knowledge-panel [data-open-add]').focus({ preventScroll: true });
-    });
-    $('#home-files').append(more);
-  }
-  if (selectedDocumentId) openDocument(selectedDocumentId);
-}
-
-function renderHistory() {
-  const container = $('#search-history');
-  const restoreFocus = container.contains(document.activeElement);
+function renderRecent() {
+  const container = $('#recent-queries');
+  const focusedQuery = container.contains(document.activeElement) ? document.activeElement.textContent : null;
   container.replaceChildren();
-  if (!history.length) container.append(element('p', 'Your searches will appear here.', 'sidebar-empty'));
-  for (const entry of history) {
-    const button = element('button', entry.query, 'history-item');
-    button.title = entry.query;
-    if (entry.id === activeHistoryId) button.setAttribute('aria-current', 'true');
-    button.addEventListener('click', () => {
-      search(entry.query);
-      if (window.innerWidth <= 760) setPanel('sidebar', false);
-    });
+  if (!recentQueries.length) container.append(element('span', 'Your searches will appear here.', 'muted'));
+  for (const query of recentQueries) {
+    const button = element('button', query, 'recent-query');
+    button.addEventListener('click', () => search(query, { populate: true }));
     container.append(button);
-  }
-  if (restoreFocus && !$('#sidebar').inert) {
-    container.querySelector('[aria-current="true"]')?.focus({ preventScroll: true });
+    if (query === focusedQuery) button.focus({ preventScroll: true });
   }
 }
 
-function renderResults(selector, results) {
-  const container = $(selector);
-  container.replaceChildren();
-  if (!results.length) {
-    container.append(element('p', 'No documents match this index. Try another term or a shorter fragment.', 'empty-results'));
+function renderResults() {
+  const report = activeReport;
+  $('#search-empty').hidden = Boolean(report);
+  $('#results').hidden = !report;
+  $('#result-note').hidden = !report;
+  for (const button of document.querySelectorAll('[data-mode]')) {
+    button.setAttribute('aria-pressed', String(button.dataset.mode === mode));
   }
-  for (const result of results) {
+  if (!report) {
+    $('#results').replaceChildren();
+    $('#results-heading').textContent = 'The results live here.';
+    $('#result-total').textContent = 'Ready';
+    $('#snapshot-query').textContent = 'Waiting for your first query';
+    for (const selector of ['#exact-count', '#partial-count', '#exact-time', '#partial-time']) $(selector).textContent = '—';
+    return;
+  }
+  $('#results-heading').textContent = `Results for “${report.query}”`;
+  $('#snapshot-query').textContent = `Query / ${report.query}`;
+  for (const [index, prefix] of [['inverted', 'exact'], ['ngram', 'partial']]) {
+    $(`#${prefix}-count`).textContent = report[index].results.length;
+    $(`#${prefix}-time`).textContent = `${report[index].time_ms.toFixed(4)} ms`;
+  }
+  const results = report[mode].results;
+  $('#result-total').textContent = `${results.length} ${results.length === 1 ? 'match' : 'matches'}`;
+  const container = $('#results');
+  container.replaceChildren();
+  if (!results.length) container.append(element('p', 'No matches in this index. Try the other index, a shorter fragment, or a different keyword.', 'empty-results'));
+  results.forEach((result, position) => {
     const card = element('article', '', 'result-card');
-    const heading = element('h4', '');
+    const body = element('div', '', 'result-content');
+    const heading = element('h3', '');
     const source = element('button', result.title, 'source-link');
     source.addEventListener('click', () => openDocument(result.id));
     heading.append(source);
-    card.append(heading, element('p', result.preview, 'result-preview'));
-    const frequencies = element('div', '', 'term-list');
-    for (const [term, count] of Object.entries(result.frequencies)) {
-      frequencies.append(element('span', `${term}: ${count}`, 'term'));
-    }
-    card.append(frequencies, element('span', `Total frequency ${result.score}`, 'score'));
+    const terms = element('div', '', 'term-list');
+    for (const [term, frequency] of Object.entries(result.frequencies)) terms.append(element('span', `${term}: ${frequency}`, 'term'));
+    body.append(heading, element('p', result.preview, 'result-preview'), terms);
+    card.append(element('span', String(position + 1).padStart(2, '0'), 'result-number'), body,
+      element('span', `Total frequency ${result.score}`, 'score'));
     container.append(card);
+  });
+}
+
+function renderCoverage() {
+  const report = reports.find((entry) => entry.query === coverageQuery) || reports[0];
+  $('#coverage-body').replaceChildren();
+  if (!report) return;
+  coverageQuery = report.query;
+  $('#coverage-heading').textContent = `Coverage for “${report.query}”`;
+  const exact = new Map(report.inverted.results.map((result) => [result.id, result]));
+  const partial = new Map(report.ngram.results.map((result) => [result.id, result]));
+  const merged = new Map([...exact, ...partial]);
+  for (const [id, result] of merged) {
+    const row = element('tr', '');
+    const name = element('th', '');
+    name.scope = 'row';
+    const link = element('button', result.title, 'coverage-link');
+    link.addEventListener('click', () => openDocument(id));
+    name.append(link);
+    row.append(name, element('td', exact.has(id) ? String(exact.get(id).score) : '0'),
+      element('td', partial.has(id) ? String(partial.get(id).score) : '0'));
+    $('#coverage-body').append(row);
+  }
+  if (!merged.size) {
+    const row = element('tr', '');
+    const cell = element('td', 'Neither index retrieved any documents.');
+    cell.colSpan = 3;
+    row.append(cell);
+    $('#coverage-body').append(row);
   }
 }
 
-function renderReport(report) {
-  for (const [mode, prefix] of [['inverted', 'exact'], ['ngram', 'partial']]) {
-    const result = report[mode];
-    $(`#${prefix}-count`).textContent = result.results.length;
-    $(`#${prefix}-time`).textContent = `${result.time_ms.toFixed(4)} ms`;
-    renderResults(`#${prefix}-results`, result.results);
+function renderBenchmarks() {
+  $('#benchmark-empty').hidden = reports.length > 0;
+  $('#benchmark-report').hidden = reports.length === 0;
+  $('#benchmark-body').replaceChildren();
+  $('#coverage-query').replaceChildren();
+  for (const report of reports) {
+    const row = element('tr', '');
+    const name = element('th', '');
+    name.scope = 'row';
+    const link = element('button', report.query, 'query-link');
+    link.addEventListener('click', () => search(report.query, { populate: true }));
+    name.append(link);
+    const partialIds = new Set(report.ngram.results.map((result) => result.id));
+    const shared = report.inverted.results.filter((result) => partialIds.has(result.id)).length;
+    row.append(name, ...[report.inverted.results.length, report.ngram.results.length,
+      `${report.inverted.time_ms.toFixed(4)} ms`, `${report.ngram.time_ms.toFixed(4)} ms`, shared]
+      .map((value) => element('td', String(value))));
+    $('#benchmark-body').append(row);
+    const option = element('option', report.query);
+    option.value = report.query;
+    $('#coverage-query').append(option);
   }
-  const unique = new Set([...report.inverted.results, ...report.ngram.results].map((row) => row.id));
-  $('#result-summary').textContent = unique.size
-    ? `Found ${unique.size} matching ${unique.size === 1 ? 'source' : 'sources'} in your project. Here’s how each index sees your query.`
-    : 'No matching sources this time. Try a shorter fragment, a different keyword, or add more project content.';
-  $('#timing-label').textContent = `${report.repeats} warm runs`;
-  $('.search-response').hidden = false;
+  if (!reports.some((report) => report.query === coverageQuery)) coverageQuery = reports[0]?.query || '';
+  $('#coverage-query').value = coverageQuery;
+  renderCoverage();
 }
 
-async function search(query, { refresh = false } = {}) {
+async function refreshCollection({ invalidateSearch = true } = {}) {
+  const request = ++collectionRequest;
+  const data = await api('/api/documents');
+  if (request !== collectionRequest) return;
+  documents = data.documents;
+  const signature = documents.map((doc) => doc.id).sort().join(',');
+  if (collectionSignature !== null && collectionSignature !== signature) {
+    // A ledger must not silently compare timings from different collection sizes.
+    collectionVersion += 1;
+    if (invalidateSearch) searchVersion += 1;
+    reports = [];
+    activeReport = null;
+    if (invalidateSearch) setSearchBusy(false);
+    renderResults();
+    renderBenchmarks();
+  }
+  collectionSignature = signature;
+  $('#nav-count').textContent = data.stats.documents;
+  for (const [id, key] of [['document-count', 'documents'], ['stem-count', 'stems'], ['word-count', 'words'], ['gram-count', 'grams']]) {
+    $(`#${id}`).textContent = data.stats[key].toLocaleString();
+  }
+  renderLibrary();
+}
+
+async function search(query, { refresh = false, populate = false } = {}) {
   query = query.trim();
-  if (!query) {
-    $('#query').focus();
-    return false;
-  }
+  if (!query) { $('#query').focus(); return false; }
   const version = ++searchVersion;
-  const submittedDraft = $('#query').value;
+  let collection = collectionVersion;
   currentQuery = query;
-  $('#project-home').hidden = true;
-  $('#conversation').hidden = false;
-  $('#query-message').textContent = query;
-  $('.search-response').hidden = true;
-  $('#search-form').setAttribute('aria-busy', 'true');
-  $('#search-submit').disabled = true;
-  status('Searching your project with both indexes…');
+  if (populate) $('#query').value = query;
+  if (!refresh) goToSearch();
+  setSearchBusy(true);
+  $('#results').hidden = true;
+  $('#search-empty').hidden = true;
+  $('#results-heading').textContent = 'Searching both indexes…';
+  status('Running your query through both indexes…');
   try {
     const report = await api(`/api/search?q=${encodeURIComponent(query)}`);
-    if (version !== searchVersion) return false;
-    let entry = history.find((item) => item.query === query);
-    if (!entry) entry = { id: String(version), query };
-    history = [entry, ...history.filter((item) => item.id !== entry.id)].slice(0, 20);
-    activeHistoryId = entry.id;
-    renderHistory();
-    renderReport(report);
-    if (!refresh && $('#query').value === submittedDraft && submittedDraft.trim() === query) {
-      $('#query').value = '';
+    if (version !== searchVersion || collection !== collectionVersion) return false;
+    if (report.collection_ids.join(',') !== collectionSignature) {
+      await refreshCollection({ invalidateSearch: false });
+      if (version !== searchVersion) return false;
+      collection = collectionVersion;
+      if (report.collection_ids.join(',') !== collectionSignature) {
+        throw new Error('The collection changed during this search. Run the query again.');
+      }
     }
-    if (!refresh) $('#workspace-scroll').scrollTop = 0;
-    status(`Compared both indexes for “${query}”. Open a source to read it.`);
+    activeReport = report;
+    reports = [report, ...reports.filter((entry) => entry.query !== query)].slice(0, 20);
+    recentQueries = [query, ...recentQueries.filter((entry) => entry !== query)].slice(0, 20);
+    renderResults();
+    renderBenchmarks();
+    renderRecent();
+    status(`Compared both indexes for “${query}”.`);
     return true;
   } catch (error) {
     if (version === searchVersion) {
-      if (!refresh && $('#query').value === submittedDraft && !submittedDraft.trim()) {
-        $('#query').value = query;
-      }
+      currentQuery = activeReport?.query || '';
+      renderResults();
       status(error.message, true);
     }
     return false;
   } finally {
     if (version === searchVersion) {
-      $('#search-submit').disabled = false;
-      $('#search-form').setAttribute('aria-busy', 'false');
+      setSearchBusy(false);
     }
   }
 }
 
-function newSearch() {
-  searchVersion += 1;
-  currentQuery = '';
-  activeHistoryId = null;
-  $('#project-home').hidden = false;
-  $('#conversation').hidden = true;
-  $('#query').value = '';
-  $('#search-submit').disabled = false;
-  $('#search-form').setAttribute('aria-busy', 'false');
-  $('#workspace-scroll').scrollTop = 0;
-  renderHistory();
-  if (window.innerWidth <= 760) setPanel('sidebar', false);
-  status('Search your project. Exact keywords and partial words are both welcome.');
-  $('#query').focus();
-}
-
-async function mutate(action, success) {
+async function mutate(action, message) {
   if (mutating) return;
   mutating = true;
-  const buttons = [...document.querySelectorAll('[data-mutation], #load-samples, #add-dialog input, #add-dialog textarea')];
-  buttons.forEach((button) => { button.disabled = true; });
-  status('Adding sources and updating both indexes…');
+  const controls = [...document.querySelectorAll('[data-mutation], #add-dialog input, #add-dialog textarea')];
+  controls.forEach((control) => { control.disabled = true; });
+  status('Saving sources and updating indexes…');
   try {
     await action();
     await refreshCollection();
-    // Refresh the active query without creating a duplicate recent-search entry.
     const refreshed = !currentQuery || await search(currentQuery, { refresh: true });
     $('#add-dialog').close();
-    if (refreshed) status(success);
+    if (refreshed) status(message);
   } catch (error) {
-    status(error.message, true);
     await refreshCollection().catch(() => {});
+    status(error.message, true);
   } finally {
+    controls.forEach((control) => { control.disabled = false; });
     mutating = false;
-    buttons.forEach((button) => { button.disabled = false; });
   }
 }
 
 function addDocument(doc) {
-  return api('/api/documents', {
-    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(doc)
-  });
+  return api('/api/documents', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(doc) });
 }
 
-for (const button of document.querySelectorAll('[data-open-add]')) {
-  button.addEventListener('click', () => {
-    $('#dialog-status').textContent = '';
-    $('#add-dialog').showModal();
-  });
-}
-$('#close-add-dialog').addEventListener('click', () => $('#add-dialog').close());
-$('#toggle-sidebar').addEventListener('click', () => setPanel('sidebar', !isPanelOpen('sidebar')));
-$('#toggle-knowledge').addEventListener('click', () => setPanel('knowledge', !isPanelOpen('knowledge')));
-$('#close-sidebar').addEventListener('click', () => { setPanel('sidebar', false); $('#toggle-sidebar').focus(); });
-$('#close-knowledge').addEventListener('click', () => { setPanel('knowledge', false); $('#toggle-knowledge').focus(); });
-$('#back-to-files').addEventListener('click', () => { showFiles(); $('#knowledge-panel [data-open-add]').focus(); });
-$('#panel-backdrop').addEventListener('click', () => { closePanels(); $('#query').focus(); });
-$('#new-search').addEventListener('click', newSearch);
-$('#project-link').addEventListener('click', newSearch);
-window.addEventListener('resize', updatePanels);
-document.addEventListener('keydown', (event) => {
-  if ($('#add-dialog').open) return;
-  const overlay = overlayPanel();
-  if (event.key === 'Tab' && overlay) {
-    const target = overlay === 'sidebar' ? $('#sidebar') : $('#knowledge-panel');
-    const controls = [...target.querySelectorAll('button:not([disabled]), a[href], summary')]
-      .filter((node) => node.getClientRects().length > 0);
-    const first = controls[0];
-    const last = controls[controls.length - 1];
-    if (event.shiftKey && (document.activeElement === first || !target.contains(document.activeElement))) {
-      event.preventDefault();
-      last?.focus();
-    } else if (!event.shiftKey && (document.activeElement === last || !target.contains(document.activeElement))) {
-      event.preventDefault();
-      first?.focus();
-    }
-  }
-  if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
-    event.preventDefault();
-    newSearch();
-  }
-  if (event.key === 'Escape') {
-    closePanels();
-    $('#query').focus();
-  }
-});
-
-$('#search-form').addEventListener('submit', (event) => {
+window.addEventListener('hashchange', route);
+$('.skip-link').addEventListener('click', (event) => {
   event.preventDefault();
-  search($('#query').value);
+  $('#main-content').focus();
 });
-$('#query').addEventListener('keydown', (event) => {
-  if (event.key === 'Enter' && !event.shiftKey && !event.isComposing) {
-    event.preventDefault();
-    if (!$('#search-submit').disabled) $('#search-form').requestSubmit();
-  }
-});
+$('#search-form').addEventListener('submit', (event) => { event.preventDefault(); search($('#query').value); });
+$('#library-filter').addEventListener('input', renderLibrary);
+$('#coverage-query').addEventListener('change', (event) => { coverageQuery = event.target.value; renderCoverage(); });
+for (const button of document.querySelectorAll('[data-mode]')) {
+  button.addEventListener('click', () => { mode = button.dataset.mode; renderResults(); });
+}
 for (const button of document.querySelectorAll('[data-query]')) {
-  button.addEventListener('click', () => search(button.dataset.query));
+  button.addEventListener('click', () => search(button.dataset.query, { populate: true }));
+}
+for (const button of document.querySelectorAll('[data-open-add]')) {
+  button.addEventListener('click', () => { $('#dialog-status').textContent = ''; $('#add-dialog').showModal(); });
+}
+for (const button of document.querySelectorAll('[data-close]')) {
+  button.addEventListener('click', () => $(`#${button.dataset.close}`).close());
 }
 $('#add-form').addEventListener('submit', (event) => {
   event.preventDefault();
   const doc = { title: $('#title').value, text: $('#text').value };
-  mutate(async () => {
-    await addDocument(doc);
-    event.target.reset();
-  }, 'Document added. Both indexes are up to date.');
+  mutate(async () => { await addDocument(doc); event.target.reset(); }, 'Document added.');
 });
 $('#upload-form').addEventListener('submit', (event) => {
   event.preventDefault();
   const files = new FormData(event.target);
-  mutate(async () => {
-    await api('/api/upload', { method: 'POST', body: files });
-    event.target.reset();
-  }, 'Documents uploaded. Both indexes are up to date.');
+  mutate(async () => { await api('/api/upload', { method: 'POST', body: files }); event.target.reset(); }, 'Documents uploaded.');
 });
 $('#load-samples').addEventListener('click', () => {
   mutate(async () => {
     const data = await api('/api/documents');
     const titles = new Set(data.documents.map((doc) => doc.title));
-    for (const doc of samples) {
-      if (!titles.has(doc.title)) await addDocument(doc);
-    }
-  }, 'Example collection ready. Try “computer”, then “compu” to compare.');
+    for (const doc of samples) if (!titles.has(doc.title)) await addDocument(doc);
+  }, 'Example collection ready.');
+});
+document.addEventListener('keydown', (event) => {
+  if ($('#add-dialog').open || $('#reader-dialog').open) return;
+  if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
+    event.preventDefault();
+    goToSearch();
+    $('#query').focus();
+  }
 });
 
-updatePanels();
+route();
 refreshCollection().catch((error) => status(error.message, true));
