@@ -28,7 +28,7 @@
 - Modify: `search_engine.py`
 
 - [ ] **Step 1: Write a failing import-level test**: `from preprocessing import preprocess, tokenize, grams`; assert `preprocess('The runners were RUNNING, and cats!') == ['runner', 'run', 'cat']` and `grams('index', 3) == {'ind', 'nde', 'dex'}`.
-- [ ] **Step 2: Run** `python tests/test_preprocessing.py` and confirm it fails because `preprocessing` does not exist.
+- [ ] **Step 2: Run** `python -m unittest discover -s tests -p "test_preprocessing.py" -v` and confirm it fails because `preprocessing` does not exist.
 - [ ] **Step 3: Create `preprocessing.py`** with the current stable stop-word collection, `tokenize`, `preprocess`, and `grams`; change `search_engine.py` to import these public helpers and remove its duplicate definitions.
 - [ ] **Step 4: Run** `python -m unittest discover -s tests -p "test_*.py" -v` and confirm the module test and existing engine/API tests pass.
 - [ ] **Step 5: Commit** with `git commit -m "refactor: isolate text preprocessing"`.
@@ -41,7 +41,7 @@
 - Modify: `search_engine.py` (only if endpoint behavior needs support)
 
 - [ ] **Step 1: Add a failing API test** that posts a document and asserts the `201` response contains `document`, `index_stats`, and `index_stats['documents'] == 1`; also assert an immediately-following `/api/search?q=algorithms` report contains the new document in the inverted result set with `{'algorithm': 2}`.
-- [ ] **Step 2: Run** `python tests/test_app.py` and confirm the new test fails because the endpoint does not yet return `index_stats`.
+- [ ] **Step 2: Run** `python -m unittest discover -s tests -p "test_app.py" -v` and confirm the new test fails because the endpoint does not yet return `index_stats`.
 - [ ] **Step 3: Implement the minimal endpoint adjustment** required by that test, without changing the upload atomicity behavior already protected by regression tests.
 - [ ] **Step 4: Run** `python -m unittest discover -s tests -p "test_*.py" -v` and confirm all API and engine tests pass.
 - [ ] **Step 5: Commit** with `git commit -m "feat: expose indexed document feedback"`.
@@ -53,6 +53,7 @@
 - Modify: `static/app.js`
 - Modify: `static/style.css`
 - Modify: `tests/test_app.py`
+- Modify: `tests/browser_smoke.py`
 
 - [ ] **Step 1: Add a failing browser-smoke assertion** after a partial `compu` search: an `aria-live` search summary contains both the exact and N-gram result counts and their measured milliseconds.
 - [ ] **Step 2: Run** `python tests/browser_smoke.py` and confirm it fails due to the missing accessible comparison summary (skip only if `agent-browser` is unavailable, documenting the command failure).
