@@ -1,19 +1,37 @@
 """Run with: .venv/bin/python app.py"""
 
+import os
+import tempfile
 from pathlib import Path
+from urllib.parse import urlsplit
 
 from flask import Flask, jsonify, render_template, request
-from urllib.parse import urlsplit
 from werkzeug.exceptions import RequestEntityTooLarge
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 from search_engine import SearchEngine
 
 
 def create_app(storage_path=None):
-    app = Flask(__name__)
+    root_dir = Path(__file__).resolve().parent
+    app = Flask(
+        __name__,
+        template_folder=str(root_dir / 'templates'),
+        static_folder=str(root_dir / 'static')
+    )
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_port=1, x_prefix=1)
     app.config['MAX_CONTENT_LENGTH'] = 5 * 1024 * 1024
-    engine = SearchEngine(storage_path if storage_path is not None
-                          else Path(__file__).parent / 'data' / 'documents.json')
+
+    if storage_path is None:
+        env_path = os.environ.get('DOCUMENT_STORE_PATH')
+        if env_path:
+            storage_path = Path(env_path)
+        elif os.environ.get('VERCEL') or os.environ.get('AWS_LAMBDA_FUNCTION_NAME') or os.environ.get('SERVERLESS'):
+            storage_path = Path(tempfile.gettempdir()) / 'documents.json'
+        else:
+            storage_path = root_dir / 'data' / 'documents.json'
+
+    engine = SearchEngine(storage_path)
 
     @app.before_request
     def reject_cross_origin_writes():
@@ -22,6 +40,9 @@ def create_app(storage_path=None):
         origin = request.headers.get('Origin')
         expected = urlsplit(request.host_url)
         actual = urlsplit(origin) if origin else None
+        forwarded_proto = request.headers.get('X-Forwarded-Proto')
+        if forwarded_proto and actual:
+            expected = expected._replace(scheme=forwarded_proto)
         if (request.headers.get('Sec-Fetch-Site') == 'cross-site'
                 or (actual and (actual.scheme, actual.netloc) != (expected.scheme, expected.netloc))):
             return jsonify(error='Cross-origin document changes are not allowed.'), 403
@@ -85,5 +106,8 @@ def create_app(storage_path=None):
     return app
 
 
+app = create_app()
+
+
 if __name__ == '__main__':
-    create_app().run(host='127.0.0.1', port=5000, debug=False)
+    app.run(host='127.0.0.1', port=5000, debug=False)
