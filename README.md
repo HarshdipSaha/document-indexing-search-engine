@@ -2,6 +2,8 @@
 
 **Branch:** `variation/retrieval-workbench` · The original project/chat interface remains on `main`.
 
+Built from the retrieval-workbench branch of [UtkarshDubeyGIT/Document-indexing-and-search-engine](https://github.com/UtkarshDubeyGIT/Document-indexing-and-search-engine), then reorganized and extended for this submission.
+
 This variation replaces the sidebar-and-conversation layout with a top-navigation retrieval workbench, a filterable document library, and a dedicated comparison ledger. Search algorithms, preprocessing, upload validation, ranking, and local storage remain compatible with the original app.
 
 A local Python/Flask application implementing both Q1 and Q2. The browser interface lets you add documents, upload several text files, inspect term frequencies, and compare exact and partial-word retrieval side by side.
