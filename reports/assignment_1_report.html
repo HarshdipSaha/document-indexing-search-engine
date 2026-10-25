@@ -1,125 +1,58 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <title>Assignment 1 — Document Indexing and Search Engine</title>
-  <style>
-    @page { size: A4; margin: 17mm 16mm 16mm; @bottom-center { content: "COCSC741 — Information Retrieval Systems   |   " counter(page); color: #5b677a; font: 8pt Arial, sans-serif; } }
-    @page cover { margin: 0; @bottom-center { content: "Netaji Subhas University of Technology"; color: white; font: 8pt Arial, sans-serif; } }
-    :root { --navy:#0d2745; --blue:#0d63ac; --teal:#008d8a; --ink:#1d2733; --muted:#5b677a; --line:#d7e1ed; --pale:#f3f8fc; --accent:#e87828; }
-    * { box-sizing:border-box; }
-    body { color:var(--ink); font:10.25pt/1.55 Arial, Helvetica, sans-serif; margin:0; }
-    h1,h2,h3 { color:var(--navy); line-height:1.15; margin:0 0 8pt; }
-    h1 { font-size:25pt; letter-spacing:-.5pt; } h2 { font-size:16pt; margin-top:16pt; border-bottom:2px solid #b8d7ef; padding-bottom:5pt; } h3 { font-size:11.5pt; margin-top:11pt; }
-    p { margin:0 0 8pt; } ul,ol { margin:4pt 0 9pt 18pt; padding:0; } li { margin:2pt 0; }
-    .cover { page:cover; height:1122px; padding:0; background:linear-gradient(145deg,#061b35 0%,#0d477a 58%,#008d8a 100%); color:white; position:relative; overflow:hidden; }
-    .cover:after { content:""; position:absolute; width:230mm; height:230mm; right:-120mm; top:-105mm; border:1px solid rgba(255,255,255,.14); border-radius:50%; box-shadow:0 0 0 25mm rgba(255,255,255,.035),0 0 0 52mm rgba(255,255,255,.025); }
-    .cover-logo { width:104px; height:104px; object-fit:contain; background:white; padding:9px; border-radius:50%; position:absolute; top:108px; left:90px; z-index:1; }
-    .inst { font-size:11pt; letter-spacing:1.2pt; position:absolute; top:238px; left:90px; z-index:1; }
-    .cover-kicker { color:#9be7e0; font-weight:bold; letter-spacing:1.2pt; font-size:10pt; position:absolute; top:365px; left:90px; z-index:1; }
-    .cover h1 { color:white; font-size:30pt; max-width:560px; position:absolute; top:402px; left:90px; z-index:1; }
-    .cover .sub { font-size:15pt; color:#d9edf8; max-width:560px; position:absolute; top:544px; left:90px; z-index:1; }
-    .student { position:absolute; top:690px; left:90px; width:590px; padding:12pt 15pt; background:rgba(255,255,255,.12); border-left:4pt solid #f4a261; z-index:1; }
-    .student strong { display:block; font-size:15pt; } .student span { display:block; margin-top:3pt; color:#d9edf8; }
-    .meta { position:absolute; top:856px; left:90px; color:#d9edf8; font-size:9pt; z-index:1; }
-    .page-break { break-before:page; }
-    .lead { font-size:11.2pt; color:#40546b; } .tag { color:var(--teal); font-size:8pt; font-weight:bold; letter-spacing:1pt; text-transform:uppercase; }
-    .callout { background:var(--pale); border-left:4px solid var(--blue); border-radius:3px; padding:10pt 12pt; margin:10pt 0; }
-    .grid { display:grid; grid-template-columns:repeat(2,1fr); gap:10pt; margin:10pt 0; }
-    .card { border:1px solid var(--line); border-radius:5pt; padding:10pt; background:#fff; }
-    .card h3 { margin-top:0; color:var(--blue); } .num { float:left; color:#fff; background:var(--blue); width:21pt; height:21pt; text-align:center; border-radius:50%; font-weight:bold; margin:0 7pt 3pt 0; line-height:21pt; }
-    table { width:100%; border-collapse:collapse; margin:8pt 0 12pt; font-size:9pt; } th { background:var(--navy); color:white; padding:7pt; text-align:left; } td { padding:6pt 7pt; border:1px solid var(--line); vertical-align:top; } tr:nth-child(even) td { background:#f7fafc; }
-    .flow { display:flex; align-items:stretch; gap:5pt; margin:10pt 0 14pt; font-size:8.5pt; text-align:center; } .flow .node { flex:1; background:#edf6fb; border:1px solid #b6d7e8; border-radius:4pt; padding:9pt 5pt; color:var(--navy); font-weight:bold; } .flow .arrow { align-self:center; color:var(--accent); font-size:17pt; font-weight:bold; }
-    .diagram { border:1px solid var(--line); background:#fbfdff; border-radius:5pt; padding:12pt; margin:10pt 0; }
-    .code { font:8.3pt/1.45 "Courier New", monospace; background:#11253d; color:#e4f1fc; border-radius:4pt; padding:10pt; white-space:pre-wrap; }
-    .metric { display:inline-block; width:31%; margin-right:2%; vertical-align:top; background:#f4f9fd; border-top:3px solid var(--teal); padding:8pt; min-height:48pt; } .metric strong { display:block; color:var(--navy); font-size:16pt; } .metric span { color:var(--muted); font-size:8.5pt; }
-    .link { color:var(--blue); overflow-wrap:anywhere; } .small { font-size:8.4pt; color:var(--muted); }
-    .check { color:#007b65; font-weight:bold; } .footer-note { margin-top:14pt; padding-top:7pt; border-top:1px solid var(--line); font-size:8.2pt; color:var(--muted); }
-  </style>
+<meta charset="utf-8">
+<title>Assignment 1 Report</title>
+<style>
+@page { size:A4; margin:17mm 16mm; @bottom-center { content:"COCSC741 - IRS  |  " counter(page); font:8pt Arial; color:#607080; } }
+@page cover { margin:0; @bottom-center { content:"Netaji Subhas University of Technology"; font:8pt Arial; color:white; } }
+:root{--navy:#0d2745;--blue:#1468ad;--teal:#008d8a;--pale:#f3f8fc;--line:#d6e1ec;--muted:#586779;--orange:#e87828}
+*{box-sizing:border-box} body{margin:0;color:#1d2733;font:10.2pt/1.48 Arial,Helvetica,sans-serif} h1,h2,h3{color:var(--navy);line-height:1.14;margin:0 0 7pt}h1{font-size:24pt}h2{font-size:15pt;border-bottom:2px solid #b9d8ef;padding-bottom:5pt;margin-top:14pt}h3{font-size:11pt;margin-top:0}p{margin:0 0 8pt}ul,ol{margin:5pt 0 8pt 17pt;padding:0}li{margin:2pt 0}code{font:8.6pt "Courier New",monospace;color:#073b66}.page{break-before:page}.tag{font-size:8pt;font-weight:bold;letter-spacing:1pt;color:var(--teal);text-transform:uppercase}.lead{color:#42556a;font-size:11pt}.callout{margin:10pt 0;padding:9pt 11pt;border-left:4px solid var(--blue);background:var(--pale)}.grid{display:grid;grid-template-columns:1fr 1fr;gap:9pt;margin:10pt 0}.card{padding:9pt;border:1px solid var(--line);border-radius:5pt}.card h3{color:var(--blue)}table{width:100%;border-collapse:collapse;margin:8pt 0 11pt;font-size:8.9pt}th{padding:6pt;background:var(--navy);color:#fff;text-align:left}td{padding:6pt;border:1px solid var(--line);vertical-align:top}tr:nth-child(even) td{background:#f7fafc}.flow{display:flex;align-items:stretch;gap:5pt;margin:10pt 0;font-size:8.2pt;text-align:center}.node{flex:1;padding:8pt 4pt;border:1px solid #b7d7e9;border-radius:4pt;background:#edf6fb;color:var(--navy);font-weight:bold}.arrow{align-self:center;color:var(--orange);font-size:16pt}.code{padding:9pt;border-radius:4pt;background:#102942;color:#e7f2fb;font:8.5pt/1.45 "Courier New",monospace;white-space:pre-wrap}.link{color:var(--blue);overflow-wrap:anywhere}.small{font-size:8.4pt;color:var(--muted)}.ok{color:#00765e;font-weight:bold}
+.cover{page:cover;height:1122px;position:relative;overflow:hidden;background:linear-gradient(145deg,#061b35,#0d477a 58%,#008d8a);color:#fff}.cover:after{content:"";position:absolute;right:-390px;top:-360px;width:850px;height:850px;border:1px solid #ffffff24;border-radius:50%;box-shadow:0 0 0 95px #ffffff09}.logo{position:absolute;top:108px;left:90px;width:104px;height:104px;padding:9px;border-radius:50%;background:#fff;object-fit:contain}.inst{position:absolute;top:238px;left:90px;font-size:11pt;letter-spacing:1.2pt}.kicker{position:absolute;top:365px;left:90px;color:#9be7e0;font-size:10pt;font-weight:bold;letter-spacing:1.1pt}.cover h1{position:absolute;top:402px;left:90px;max-width:560px;color:#fff;font-size:31pt}.cover .sub{position:absolute;top:544px;left:90px;max-width:560px;color:#d9edf8;font-size:15pt}.student{position:absolute;top:690px;left:90px;width:590px;padding:12pt 15pt;border-left:4pt solid #f4a261;background:#ffffff20}.student strong{display:block;font-size:15pt}.student span{display:block;margin-top:3pt;color:#d9edf8}.submitted{position:absolute;top:856px;left:90px;color:#d9edf8;font-size:9pt}
+</style>
 </head>
 <body>
-  <section class="cover">
-    <img class="cover-logo" src="file:///H:/btp1/BTP-Report/assets/NSUT_logo.png" alt="NSUT logo">
-    <div class="inst">NETAJI SUBHAS UNIVERSITY OF TECHNOLOGY</div>
-    <div class="cover-kicker">COURSE PROJECT REPORT · COCSC741–IRS</div>
-    <h1>Document Indexing<br>and Search Engine</h1>
-    <p class="sub">Assignment 1 — Mini document search engine with inverted and N-gram indexing techniques.</p>
-    <div class="student"><strong>Harshdip Saha</strong><span>Roll No. 2023UCA1897</span><span>Course: Information Retrieval Systems (COCSC741–IRS)</span></div>
-    <div class="meta">Submitted to<br>Department of Computer Science & Engineering<br>Academic Session 2026–27</div>
-  </section>
+<section class="cover">
+<img class="logo" src="file:///H:/btp1/BTP-Report/assets/NSUT_logo.png" alt="NSUT logo">
+<div class="inst">NETAJI SUBHAS UNIVERSITY OF TECHNOLOGY</div>
+<div class="kicker">ASSIGNMENT 1 REPORT | COCSC741 - IRS</div>
+<h1>Document Indexing<br>and Search Engine</h1>
+<p class="sub">Inverted index and N-gram search for a small document collection.</p>
+<div class="student"><strong>Harshdip Saha</strong><span>Roll No. 2023UCA1897</span><span>Information Retrieval Systems, COCSC741 - IRS</span></div>
+<div class="submitted">Submitted to<br>Department of Computer Science and Engineering<br>Academic Session 2026-27</div>
+</section>
 
-  <section class="page-break">
-    <p class="tag">Executive summary</p><h1>Project overview</h1>
-    <p class="lead">Retrieval Desk is a local, web-based document search engine that turns a collection of text documents into two searchable indexes. It demonstrates the core information-retrieval lifecycle: document ingestion, normalization, indexing, retrieval, ranking, and performance comparison.</p>
-    <div class="callout"><strong>Live application:</strong> <span class="link">https://document-indexing-search-engine.vercel.app</span><br><strong>Source repository:</strong> <span class="link">https://github.com/HarshdipSaha/document-indexing-search-engine</span></div>
-    <h2>Objectives</h2>
-    <div class="grid"><div class="card"><span class="num">1</span><h3>Index documents</h3><p>Accept manually entered documents and multiple UTF-8 text files, then persist and index them automatically.</p></div><div class="card"><span class="num">2</span><h3>Retrieve relevant sources</h3><p>Use an inverted index for exact processed-keyword retrieval and frequency-based ranking.</p></div><div class="card"><span class="num">3</span><h3>Support partial words</h3><p>Use character N-grams to locate words containing a user-entered fragment.</p></div><div class="card"><span class="num">4</span><h3>Compare techniques</h3><p>Show result sets, term frequencies, and median search time for both indexing methods.</p></div></div>
-    <h2>Technology stack</h2>
-    <table><tr><th>Layer</th><th>Technology</th><th>Responsibility</th></tr><tr><td>Application</td><td>Python + Flask</td><td>Routes, upload validation, JSON API and local server</td></tr><tr><td>Text processing</td><td>NLTK Porter Stemmer</td><td>Tokenization, stop-word removal and stemming</td></tr><tr><td>Search layer</td><td>In-memory Python dictionaries</td><td>Inverted postings, word postings and N-gram postings</td></tr><tr><td>Interface</td><td>HTML, CSS and JavaScript</td><td>Search, Library and Compare views with accessible results</td></tr><tr><td>Storage</td><td>JSON document collection</td><td>Atomic persistence; indexes rebuild at application start</td></tr></table>
-    <div class="footer-note">The implementation is intentionally educational and local-first: it requires no external search service, API key or downloaded NLTK corpus.</div>
-  </section>
+<section class="page">
+<p class="tag">Project scope</p><h1>Document search with two indexes.</h1>
+<p class="lead">This submission extends the retrieval-workbench branch of the upstream project with a clearer preprocessing boundary, updated index statistics and an accessible comparison summary. Users can paste text or upload multiple <code>.txt</code> files, then search the same collection with an inverted index and an N-gram index.</p>
+<div class="callout"><strong>Live app:</strong> <span class="link">https://document-indexing-search-engine.vercel.app</span><br><strong>GitHub:</strong> <span class="link">https://github.com/HarshdipSaha/document-indexing-search-engine</span></div>
+<h2>Q1: Mini Document Search Engine</h2>
+<div class="flow"><div class="node">Add or upload document</div><div class="arrow">→</div><div class="node">Tokenize + clean text</div><div class="arrow">→</div><div class="node">Build inverted index</div><div class="arrow">→</div><div class="node">Show ranked matches</div></div>
+<div class="grid"><div class="card"><h3>Text preprocessing</h3><p>Words are lowercased, tokenized, stripped of stop words, then stemmed with Porter Stemmer. For example, <code>running</code> becomes <code>run</code>.</p></div><div class="card"><h3>Inverted index</h3><p>The index stores <code>term → {document id: frequency}</code>. This gives direct keyword lookup and term-frequency ranking.</p></div><div class="card"><h3>Document updates</h3><p>New text is saved, indexed and shown in the UI without rebuilding the whole app manually.</p></div><div class="card"><h3>Result details</h3><p>Each result shows title, preview, query-term frequency and total score. So the ranking is visible.</p></div></div>
+<h2>Example index</h2><div class="code">comput  →  {doc_01: 2, doc_04: 1}
+retriev →  {doc_02: 3}
+index   →  {doc_01: 1, doc_03: 2}</div>
+</section>
 
-  <section class="page-break">
-    <p class="tag">Q1 · Mini Document Search Engine</p><h1>Inverted indexing and preprocessing</h1>
-    <p>The system represents each document as normalized terms and builds an <strong>inverted index</strong>: a mapping from each stemmed term to the document IDs where it occurs, along with its frequency in each document.</p>
-    <div class="flow"><div class="node">Text document</div><div class="arrow">→</div><div class="node">Tokenize<br>lowercase words</div><div class="arrow">→</div><div class="node">Remove stop words</div><div class="arrow">→</div><div class="node">Porter stem</div><div class="arrow">→</div><div class="node">Term postings</div></div>
-    <h2>Preprocessing pipeline</h2>
-    <table><tr><th>Stage</th><th>Purpose</th><th>Example</th></tr><tr><td>Tokenization</td><td>Extract lowercase alphanumeric tokens while splitting punctuation and underscores.</td><td>“Cats, running!” → <code>cats, running</code></td></tr><tr><td>Stop-word removal</td><td>Remove common function words that usually carry little retrieval value.</td><td><code>the, and, were</code> removed</td></tr><tr><td>Stemming</td><td>Conflate related inflected forms so they match a shared root.</td><td><code>cats → cat</code>, <code>running → run</code></td></tr></table>
-    <h2>Index representation</h2>
-    <div class="code">inverted_index = {
-  "comput": {"doc-01": 2, "doc-04": 1},
-  "retriev": {"doc-02": 3},
-  "index": {"doc-01": 1, "doc-03": 2}
-}</div>
-    <p>The count in each posting is the term frequency. During search, postings for distinct query terms are merged using OR semantics; documents are ranked by the sum of matched query-term frequencies. Ties are resolved deterministically by title and ID.</p>
-    <h2>Automatic index maintenance</h2>
-    <ul><li>Manual entry and batch upload both validate document title/text, persist the updated collection, and index the new material under a re-entrant lock.</li><li>Writes use a temporary JSON file followed by replacement, reducing the risk of a partially written store.</li><li>New-document API responses include updated index statistics; the client refreshes active results and collection metrics immediately.</li></ul>
-  </section>
+<section class="page">
+<p class="tag">Q2: Multiple indexing techniques</p><h1>Stemmed keywords and word fragments.</h1>
+<p class="lead">The second index handles cases where the user only remembers part of a word. Typing <code>compu</code> should still find <code>computer</code>, <code>computers</code> and <code>computing</code>.</p>
+<div style="border:1px solid var(--line);border-radius:5pt;padding:11pt;margin:10pt 0"><svg viewBox="0 0 720 176" width="100%" aria-label="N-gram search diagram"><rect x="15" y="50" width="125" height="66" rx="8" fill="#0d2745"/><text x="77" y="77" fill="white" text-anchor="middle" font-family="Arial" font-size="15" font-weight="bold">compu</text><text x="77" y="99" fill="#bfeee9" text-anchor="middle" font-family="Arial" font-size="12">com · omp · mpu</text><path d="M141 83 H200" stroke="#e87828" stroke-width="3"/><polygon points="200,83 188,77 188,89" fill="#e87828"/><rect x="203" y="35" width="175" height="96" rx="8" fill="#edf6fb" stroke="#84badb"/><text x="290" y="65" fill="#0d2745" text-anchor="middle" font-family="Arial" font-size="14" font-weight="bold">N-gram postings</text><text x="290" y="90" fill="#40546b" text-anchor="middle" font-family="Arial" font-size="12">com, omp, mpu</text><text x="290" y="111" fill="#40546b" text-anchor="middle" font-family="Arial" font-size="12">candidate words</text><path d="M379 83 H437" stroke="#e87828" stroke-width="3"/><polygon points="437,83 425,77 425,89" fill="#e87828"/><rect x="440" y="50" width="135" height="66" rx="8" fill="#e8f6f3" stroke="#74c4bb"/><text x="507" y="77" fill="#006f6c" text-anchor="middle" font-family="Arial" font-size="14" font-weight="bold">verify</text><text x="507" y="99" fill="#40546b" text-anchor="middle" font-family="Arial" font-size="12">contains compu</text><path d="M576 83 H635" stroke="#e87828" stroke-width="3"/><polygon points="635,83 623,77 623,89" fill="#e87828"/><rect x="638" y="50" width="67" height="66" rx="8" fill="#1468ad"/><text x="671" y="77" fill="white" text-anchor="middle" font-family="Arial" font-size="12" font-weight="bold">rank</text><text x="671" y="98" fill="#d8efff" text-anchor="middle" font-family="Arial" font-size="11">docs</text></svg></div>
+<h2>How the N-gram search works</h2><ol><li>Store lowercase raw words with their document frequencies.</li><li>Break the partial word into character N-grams.</li><li>Intersect the N-gram lists to get candidate words.</li><li>Check that the complete fragment exists in the candidate word.</li><li>Aggregate word frequencies by document and rank the matches.</li></ol>
+<h2>Comparison</h2>
+<table><tr><th>Feature</th><th>Inverted index</th><th>N-gram index</th></tr><tr><td>Search type</td><td>Exact processed keyword</td><td>Partial word / fragment</td></tr><tr><td>Example</td><td><code>computer</code> → <code>comput</code></td><td><code>compu</code> → computer, computing</td></tr><tr><td>Main benefit</td><td>Fast direct term lookup</td><td>Flexible partial search</td></tr><tr><td>Trade-off</td><td>Requires a matching stem</td><td>Needs candidate intersection and checking</td></tr></table>
+</section>
 
-  <section class="page-break">
-    <p class="tag">Q2 · Multiple indexing techniques</p><h1>N-gram retrieval and comparison</h1>
-    <p>Alongside the inverted index, the application stores an unstemmed word index and a character N-gram index. This makes partial-word search possible without scanning every document body.</p>
-    <div class="diagram"><svg viewBox="0 0 720 205" width="100%" aria-label="N-gram index diagram"><rect x="18" y="55" width="126" height="70" rx="8" fill="#0d2745"/><text x="81" y="83" fill="white" text-anchor="middle" font-family="Arial" font-size="15" font-weight="bold">Query: compu</text><text x="81" y="106" fill="#bfeee9" text-anchor="middle" font-family="Arial" font-size="12">com · omp · mpu</text><path d="M145 90 H207" stroke="#e87828" stroke-width="3"/><polygon points="207,90 195,84 195,96" fill="#e87828"/><rect x="210" y="35" width="150" height="110" rx="8" fill="#edf6fb" stroke="#84badb"/><text x="285" y="65" fill="#0d2745" text-anchor="middle" font-family="Arial" font-size="14" font-weight="bold">N-gram postings</text><text x="285" y="91" fill="#40546b" text-anchor="middle" font-family="Arial" font-size="12">com → computer, computing</text><text x="285" y="111" fill="#40546b" text-anchor="middle" font-family="Arial" font-size="12">omp → computer, computing</text><text x="285" y="131" fill="#40546b" text-anchor="middle" font-family="Arial" font-size="12">mpu → computer, computing</text><path d="M362 90 H424" stroke="#e87828" stroke-width="3"/><polygon points="424,90 412,84 412,96" fill="#e87828"/><rect x="427" y="55" width="126" height="70" rx="8" fill="#e8f6f3" stroke="#74c4bb"/><text x="490" y="82" fill="#006f6c" text-anchor="middle" font-family="Arial" font-size="14" font-weight="bold">Candidates</text><text x="490" y="105" fill="#40546b" text-anchor="middle" font-family="Arial" font-size="12">word contains compu</text><path d="M555 90 H617" stroke="#e87828" stroke-width="3"/><polygon points="617,90 605,84 605,96" fill="#e87828"/><rect x="620" y="55" width="82" height="70" rx="8" fill="#0d63ac"/><text x="661" y="82" fill="white" text-anchor="middle" font-family="Arial" font-size="13" font-weight="bold">Ranked</text><text x="661" y="104" fill="#d8efff" text-anchor="middle" font-family="Arial" font-size="11">documents</text></svg></div>
-    <h2>How partial matching works</h2>
-    <ol><li>Keep the raw lowercase words (without stemming) and record their document frequencies.</li><li>Generate trigrams for a fragment, or unigrams/bigrams for very short fragments.</li><li>Intersect the N-gram posting sets to identify candidate words.</li><li>Verify that the full fragment occurs contiguously in each candidate word, eliminating false positives.</li><li>Aggregate candidate-word frequency by document and rank the result list.</li></ol>
-    <h2>Technique comparison</h2>
-    <table><tr><th>Aspect</th><th>Inverted index</th><th>N-gram index</th></tr><tr><td>Query form</td><td>Exact stemmed keyword(s)</td><td>Literal partial word / fragment</td></tr><tr><td>Best suited to</td><td>Precise term lookups</td><td>Prefix/infix exploration</td></tr><tr><td>Stored key</td><td>Normalized stem</td><td>Character sequence → candidate words</td></tr><tr><td>Example</td><td><code>computer</code> → stem <code>comput</code></td><td><code>compu</code> → computer, computers, computing</td></tr><tr><td>Trade-off</td><td>Fast direct lookup; misses incomplete words</td><td>Flexible partial search; intersects candidate sets</td></tr></table>
-  </section>
-
-  <section class="page-break">
-    <p class="tag">Search results and performance</p><h1>Evaluation methodology</h1>
-    <p>Every submitted query is executed against both indexes. The workbench displays the matching documents, each processed query-term frequency, total score, result counts, and median lookup time. This enables a direct and reproducible comparison.</p>
-    <div class="metric"><strong>50</strong><span>warm in-process executions per index</span></div><div class="metric"><strong>Median</strong><span>reported to reduce transient timing noise</span></div><div class="metric"><strong>2</strong><span>indexes evaluated for every query</span></div>
-    <h2>Query types to demonstrate</h2>
-    <table><tr><th>Query type</th><th>Example query</th><th>Expected observation</th></tr><tr><td>Exact keyword</td><td><code>computer</code></td><td>Inverted index retrieves documents containing the normalized stem; N-gram mode finds literal words containing the sequence.</td></tr><tr><td>Partial word</td><td><code>compu</code></td><td>Exact index generally has no posting for the incomplete term; N-gram index retrieves computer-related words.</td></tr><tr><td>Multiple terms</td><td><code>search engine</code></td><td>Both methods combine distinct terms with OR semantics; result cards show per-term frequencies and a total score.</td></tr><tr><td>Short fragment</td><td><code>ex</code></td><td>Bigram support enables partial retrieval when trigrams are not available.</td></tr><tr><td>Missing term</td><td><code>xyznotfound</code></td><td>Both result lists are empty, while the comparison view still records timing.</td></tr></table>
-    <h2>Presentation in the application</h2>
-    <ul><li><strong>Search view:</strong> toggles between Inverted Index and N-gram Index result lists without rerunning the query.</li><li><strong>Index snapshot:</strong> shows the current exact/partial result count and median milliseconds.</li><li><strong>Comparison ledger:</strong> retains the latest measurement per query and shows exact matches, partial matches, inverted time, N-gram time, and shared documents.</li><li><strong>Document coverage table:</strong> identifies which documents each technique retrieved and their total frequencies.</li><li><strong>Accessible summary:</strong> communicates both result counts and timings to assistive technology through a live region.</li></ul>
-    <div class="callout"><strong>Interpretation:</strong> The timings are controlled microbenchmarks of preprocessing, lookup, result construction and ranking. They exclude network, rendering, initial warm-up, disk writes and index construction; hence small timing differences should not be over-interpreted.</div>
-  </section>
-
-  <section class="page-break">
-    <p class="tag">Implementation quality</p><h1>Validation, testing and deployment</h1>
-    <h2>Input validation and robustness</h2>
-    <div class="grid"><div class="card"><h3>Upload safety</h3><p>Only non-empty UTF-8 <code>.txt</code> files are accepted. A batch is fully validated before any document is added, preventing partial success for invalid input.</p></div><div class="card"><h3>Request boundaries</h3><p>Uploads are limited to 30 files and 5 MB; queries are limited to 500 characters. Malformed payloads return JSON errors.</p></div><div class="card"><h3>Storage integrity</h3><p>Document storage validates JSON at startup and uses atomic replacement on writes. Duplicate or invalid records are rejected.</p></div><div class="card"><h3>Client safety</h3><p>Source content is inserted through DOM text nodes rather than unsafe HTML, and cross-origin mutations are rejected.</p></div></div>
-    <h2>Automated verification</h2>
-    <table><tr><th>Area</th><th>Verified behavior</th></tr><tr><td>Preprocessing</td><td>Tokenization, stop-word removal, stemming, public preprocessing module, and N-gram generation.</td></tr><tr><td>Exact retrieval</td><td>Frequency tracking, ranking, multiple terms, duplicate query normalization, empty queries and persistence.</td></tr><tr><td>Partial retrieval</td><td>Substring matching, short fragments, candidate verification, and stop-word-like fragments.</td></tr><tr><td>HTTP API</td><td>Document addition, index statistics, batch uploads, atomic validation, limits, JSON errors and cross-origin protection.</td></tr><tr><td>Interface contract</td><td>Search, Library, Compare, accessible dialogs, frequency display and live comparison summary.</td></tr></table>
-    <p><span class="check">✓</span> The project test suite contains 23 automated tests. It can be executed with:</p>
-    <div class="code">python -m unittest discover -s tests -p "test_*.py" -v
+<section class="page">
+<p class="tag">Results and submission check</p><h1>Measured search behavior.</h1>
+<table><tr><th>Requirement</th><th>Where it appears</th><th>Status</th></tr><tr><td>Add multiple text documents</td><td>Manual add form and multi-file UTF-8 upload</td><td class="ok">Done</td></tr><tr><td>Preprocessing</td><td>Tokenization, stop words, Porter stemming</td><td class="ok">Done</td></tr><tr><td>Matching docs and frequencies</td><td>Result cards and document coverage table</td><td class="ok">Done</td></tr><tr><td>Automatic updates</td><td>Indexes and UI refresh after each add/upload</td><td class="ok">Done</td></tr><tr><td>Exact plus partial search</td><td>Inverted and N-gram result modes</td><td class="ok">Done</td></tr><tr><td>Time comparison</td><td>Comparison ledger with median milliseconds</td><td class="ok">Done</td></tr></table>
+<h2>Measured comparison</h2>
+<p>Sample collection: <em>Computer Science</em>, <em>Information Retrieval</em> and <em>N-gram Notes</em>. Each method ran 50 times after warm-up. Times below are median milliseconds from the same collection.</p>
+<table><tr><th>Query</th><th>Inverted index</th><th>N-gram index</th><th>Observed result</th></tr><tr><td><code>computer</code></td><td>2 docs, frequencies 4 and 1<br>0.0346 ms</td><td>1 doc, frequency 3<br>0.0157 ms</td><td>Stemming also finds <code>computing</code>.</td></tr><tr><td><code>compu</code></td><td>0 docs<br>0.0277 ms</td><td>2 docs, frequencies 4 and 1<br>0.0182 ms</td><td>Partial matching finds computer-related words.</td></tr></table>
+<p>I added coverage for preprocessing, indexing, term frequency, partial matching, uploads, validation, persistence and updates. The project has <strong>23 automated tests</strong>.</p>
+<div class="code">python -m unittest discover -s tests -p "test_*.py" -v
 python -m compileall -q app.py preprocessing.py search_engine.py tests</div>
-    <h2>Deployment and reproducibility</h2>
-    <p>The deployed application is available at <span class="link">https://document-indexing-search-engine.vercel.app</span>. The repository contains setup instructions, requirements, source code, tests, and a detailed explanation of both indexing techniques. For local execution:</p>
-    <div class="code">python -m pip install -r requirements.txt
-python app.py
-# Open http://127.0.0.1:5000</div>
-  </section>
-
-  <section class="page-break">
-    <p class="tag">Conclusion</p><h1>Assignment compliance</h1>
-    <p class="lead">The project delivers a complete mini document search engine and extends it with a second indexing method for partial-word search. It is designed to make the behaviour of both methods observable rather than treating indexing as a black box.</p>
-    <table><tr><th>Assignment requirement</th><th>Implementation evidence</th><th>Status</th></tr><tr><td>Upload/add multiple text documents</td><td>Manual add form and multi-file UTF-8 upload endpoint</td><td class="check">Completed</td></tr><tr><td>Inverted index mapping words to documents</td><td>Stem-to-document-frequency postings in <code>SearchEngine</code></td><td class="check">Completed</td></tr><tr><td>Tokenization, stop words and stemming</td><td>Dedicated <code>preprocessing.py</code> module with Porter stemmer</td><td class="check">Completed</td></tr><tr><td>Show matching documents and term frequency</td><td>Ranked result cards and coverage table</td><td class="check">Completed</td></tr><tr><td>Automatic index update</td><td>Immediate indexing, stats response and UI refresh</td><td class="check">Completed</td></tr><tr><td>Inverted + N-gram techniques</td><td>Exact and partial result modes</td><td class="check">Completed</td></tr><tr><td>Exact and partial-word search</td><td>Stemmed exact queries and character-N-gram fragments</td><td class="check">Completed</td></tr><tr><td>Result/time comparison table or visualization</td><td>Comparison ledger, snapshot and accessible live summary</td><td class="check">Completed</td></tr></table>
-    <div class="callout"><strong>Repository:</strong> <span class="link">https://github.com/HarshdipSaha/document-indexing-search-engine</span><br><strong>Live URL:</strong> <span class="link">https://document-indexing-search-engine.vercel.app</span></div>
-    <h2>Future scope</h2><p>Potential extensions include TF–IDF/BM25 ranking, phrase and Boolean operators, highlighted matches, document deletion/editing, SQLite persistence, and evaluation on larger corpora. These enhancements can be added without changing the core separation between preprocessing, indexing, retrieval and presentation.</p>
-    <p style="margin-top:32pt; font-size:11pt; color:var(--navy);"><strong>Submitted by:</strong> Harshdip Saha &nbsp; | &nbsp; <strong>Roll No.:</strong> 2023UCA1897</p>
-  </section>
-</body>
-</html>
+<h2>Conclusion</h2><p>The project keeps both retrieval methods visible. The user can add documents, inspect frequencies, test a fragment and compare the timings in one place.</p>
+<p style="margin-top:26pt;color:var(--navy)"><strong>Submitted by:</strong> Harshdip Saha &nbsp; | &nbsp; <strong>Roll No.:</strong> 2023UCA1897</p>
+</section>
+</body></html>
