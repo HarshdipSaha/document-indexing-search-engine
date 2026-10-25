@@ -49,7 +49,7 @@ def create_app(storage_path=None):
         if not isinstance(data, dict):
             raise ValueError('Send a JSON object with title and text.')
         doc = engine.add_document(data.get('title'), data.get('text'))
-        return jsonify(document=doc), 201
+        return jsonify(document=doc, index_stats=engine.stats()), 201
 
     @app.post('/api/upload')
     def upload():
@@ -70,7 +70,7 @@ def create_app(storage_path=None):
                 raise ValueError(f'{name} is empty.')
             pending.append((name, text))
         added = [engine.add_document(name, text) for name, text in pending]
-        return jsonify(documents=added), 201
+        return jsonify(documents=added, index_stats=engine.stats()), 201
 
     @app.get('/api/search')
     def search():

@@ -29,6 +29,16 @@ class AppTests(unittest.TestCase):
         self.assertEqual(data['ngram']['results'][0]['score'], 2)
         self.assertEqual(self.client.get('/api/documents').get_json()['stats']['documents'], 1)
 
+    def test_add_document_reports_updated_index_stats(self):
+        response = self.client.post('/api/documents', json={
+            'title': 'Algorithms', 'text': 'Algorithms use algorithms.'})
+        self.assertEqual(response.status_code, 201)
+        data = response.get_json()
+        self.assertEqual(data['index_stats']['documents'], 1)
+        report = self.client.get('/api/search?q=algorithms').get_json()
+        self.assertEqual(report['inverted']['results'][0]['id'], data['document']['id'])
+        self.assertEqual(report['inverted']['results'][0]['frequencies'], {'algorithm': 2})
+
     def test_multiple_uploads_update_index(self):
         response = self.client.post('/api/upload', data={'files': [
             (io.BytesIO(b'Cats cats'), 'cats.txt'),
