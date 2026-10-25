@@ -245,6 +245,11 @@ def run():
             # A collection mutation must discard older measurements, rerun the
             # active query (not the input draft), and render source strings safely.
             search('compu')
+            check(
+                'document.querySelector("#comparison-summary").textContent.includes("Inverted index")',
+                'document.querySelector("#comparison-summary").textContent.includes("N-gram index")',
+                'document.querySelector("#comparison-summary").textContent.includes("ms")',
+            )
             draft = 'An unfinished draft'
             action('fill', '#query', draft)
             open_add()

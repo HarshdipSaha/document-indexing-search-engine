@@ -69,6 +69,18 @@ The interface reports median milliseconds over **50 warmed searches per index** 
 
 ## Implementation
 
+### Assignment checklist
+
+| Requirement | Where it is demonstrated |
+| --- | --- |
+| Add multiple text documents | Add dialog and multi-file UTF-8 `.txt` upload |
+| Inverted index | Exact-mode Search and `search_engine.py` postings |
+| Tokenization, stop-word removal, stemming | `preprocessing.py` and the retrieval pipeline panel |
+| Matching documents and query-term frequencies | Result cards and document-coverage table |
+| Automatic index updates | Immediate search refresh and returned `index_stats` after additions |
+| N-gram partial search | N-gram mode with examples such as `compu` |
+| Compare indexing techniques and timings | Compare ledger, index snapshot, and accessible summary |
+
 ### Q1: inverted index
 
 1. Lowercase and tokenize Unicode alphanumeric words; punctuation and underscores split tokens.
@@ -105,11 +117,13 @@ Uploads accept 1–30 UTF-8 `.txt` files, including UTF-8 BOM, with a 5 MB reque
 
 ```text
 app.py                  Flask routes, upload validation and local server
-search_engine.py        Preprocessing, indexes, ranking, persistence and timing
+preprocessing.py        Shared tokenization, stop words, stemming and N-grams
+search_engine.py        Indexes, ranking, persistence and timing
 templates/index.html    Accessible search and comparison interface
 static/app.js           Upload/add/search workflows and safe result rendering
 static/style.css        Responsive interface styling
 tests/test_engine.py    Engine and persistence tests
+tests/test_preprocessing.py  Preprocessing module tests
 tests/test_app.py       API, uploads, HTML structure and request validation tests
 requirements.txt        Python dependencies
 ```
@@ -118,7 +132,7 @@ requirements.txt        Python dependencies
 
 ```sh
 python -m unittest discover -s tests -v
-python -m compileall -q app.py search_engine.py tests
+python -m compileall -q app.py preprocessing.py search_engine.py tests
 ```
 
 Optional JavaScript syntax check (requires Node.js):
@@ -132,8 +146,8 @@ Tests use temporary storage and never change the user's collection. Coverage inc
 ## API
 
 - `GET /api/documents` — collection and index statistics.
-- `POST /api/documents` — JSON `{ "title": "Title", "text": "Document body" }`.
-- `POST /api/upload` — multipart form with one or more `files` fields.
+- `POST /api/documents` — JSON `{ "title": "Title", "text": "Document body" }`; returns the document and updated `index_stats`.
+- `POST /api/upload` — multipart form with one or more `files` fields; returns added documents and updated `index_stats`.
 - `GET /api/search?q=compu` — both result sets and measured timings.
 
 Each result includes document ID, title, a preview, processed query-term frequencies, and total frequency score. API validation errors return JSON with an `error` field.

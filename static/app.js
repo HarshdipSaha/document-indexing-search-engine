@@ -119,6 +119,7 @@ function renderResults() {
     $('#results-heading').textContent = 'The results live here.';
     $('#result-total').textContent = 'Ready';
     $('#snapshot-query').textContent = 'Waiting for your first query';
+    $('#comparison-summary').textContent = '';
     for (const selector of ['#exact-count', '#partial-count', '#exact-time', '#partial-time']) $(selector).textContent = '—';
     return;
   }
@@ -128,6 +129,9 @@ function renderResults() {
     $(`#${prefix}-count`).textContent = report[index].results.length;
     $(`#${prefix}-time`).textContent = `${report[index].time_ms.toFixed(4)} ms`;
   }
+  $('#comparison-summary').textContent =
+    `Inverted index: ${report.inverted.results.length} matches in ${report.inverted.time_ms.toFixed(4)} ms. ` +
+    `N-gram index: ${report.ngram.results.length} matches in ${report.ngram.time_ms.toFixed(4)} ms.`;
   const results = report[mode].results;
   $('#result-total').textContent = `${results.length} ${results.length === 1 ? 'match' : 'matches'}`;
   const container = $('#results');

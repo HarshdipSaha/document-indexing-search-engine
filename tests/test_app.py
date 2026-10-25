@@ -93,7 +93,8 @@ class AppTests(unittest.TestCase):
                           'id="library-filter"', 'id="benchmark-body"',
                           'id="document-content"', 'id="add-dialog"',
                           'id="reader-dialog"', 'aria-label="Workbench navigation"',
-                          'aria-label="Search documents"'):
+                          'aria-label="Search documents"',
+                          'id="comparison-summary"'):
             self.assertIn(component, html)
         self.assertNotIn('id="sidebar"', html)
         self.assertNotIn('id="conversation"', html)
